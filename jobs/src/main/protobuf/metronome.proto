@@ -3,6 +3,8 @@ package dcos.metronome;
 option java_package = "dcos.metronome";
 option java_outer_classname = "Protos";
 
+import "mesos/mesos.proto";
+
 /**
  * Key, value pair used to store free form user-data.
  */
@@ -140,6 +142,22 @@ message JobSpec {
 
     message DockerSpec {
       optional string image = 1;
+
+      optional mesos.ContainerInfo.DockerInfo.Network network = 2 [default = HOST];
+
+      message PortMapping {
+        optional uint32 host_port = 1;
+        required uint32 container_port = 2;
+        optional string protocol = 3;
+        optional string name = 4;
+        repeated Label labels = 5;
+        optional uint32 service_port = 100 [default = 0];
+      }
+
+      repeated PortMapping port_mappings = 3;
+      optional bool privileged = 4 [default = false];
+      repeated mesos.Parameter parameters = 5;
+      optional bool force_pull_image = 6;
     }
     optional DockerSpec docker = 11;
 

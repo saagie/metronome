@@ -5,7 +5,11 @@ import dcos.metronome.jobinfo.JobInfo
 import dcos.metronome.jobrun.StartedJobRun
 import dcos.metronome.model._
 import dcos.metronome.scheduler.TaskState
+import mesosphere.marathon.api.v2.json.Formats
 import mesosphere.marathon.core.task.Task
+import mesosphere.marathon.state.Container.Docker.PortMapping
+import mesosphere.marathon.state.{ AppDefinition, Parameter }
+import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network
 import org.joda.time.{ DateTime, DateTimeZone }
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
@@ -131,7 +135,31 @@ package object models {
 
   implicit lazy val VolumeFormat: Format[Volume] = Json.format[Volume]
 
-  implicit lazy val DockerSpecFormat: Format[DockerSpec] = Json.format[DockerSpec]
+  implicit lazy val DockerSpecFormat: Format[DockerSpec] = (
+    (__ \ "image").format[String] ~
+    (__ \ "network").formatNullable[Network] ~
+    (__ \ "portMappings").formatNullable[Seq[mesosphere.marathon.state.Container.Docker.PortMapping]] ~
+    (__ \ "privileged").formatNullable[Boolean].withDefault(false) ~
+    (__ \ "parameters").formatNullable[Seq[Parameter]].withDefault(Seq.empty) ~
+    (__ \ "forcePullImage").formatNullable[Boolean].withDefault(false)
+  )(DockerSpec.withDefaultPortMappings, unlift(DockerSpec.unapply))
+
+  implicit lazy val DockerNetworkFormat: Format[Network] =
+    Formats.enumFormat(Network.valueOf, str => s"$str is not a valid network type")
+
+  implicit lazy val ParameterFormat: Format[Parameter] = (
+    (__ \ "key").format[String] ~
+    (__ \ "vaue").format[String]
+  ) (Parameter.apply, unlift(Parameter.unapply))
+
+  implicit lazy val PortMappingsFormat: Format[PortMapping] = (
+    (__ \ "containerPort").formatNullable[Int].withDefault(AppDefinition.RandomPortValue) ~
+    (__ \ "hostPort").formatNullable[Int] ~
+    (__ \ "servicePort").formatNullable[Int].withDefault(AppDefinition.RandomPortValue) ~
+    (__ \ "protocol").formatNullable[String].withDefault("tcp") ~
+    (__ \ "name").formatNullable[String] ~
+    (__ \ "labels").formatNullable[Map[String, String]].withDefault(Map.empty[String, String])
+  ) (PortMapping.apply, unlift(PortMapping.unapply))
 
   implicit lazy val RestartSpecFormat: Format[RestartSpec] = (
     (__ \ "policy").formatNullable[RestartPolicy].withDefault(RestartSpec.DefaultRestartPolicy) ~

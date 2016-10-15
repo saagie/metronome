@@ -5,9 +5,11 @@ import dcos.metronome.model._
 import dcos.metronome.repository.impl.kv.EntityMarshaller
 import org.joda.time.DateTimeZone
 import org.slf4j.LoggerFactory
+import mesosphere.marathon.state.Container.Docker.PortMapping
+import mesosphere.marathon.state.Parameter
 
 import scala.collection.JavaConverters._
-
+import scala.collection.JavaConversions._
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 
@@ -276,12 +278,27 @@ object RunSpecConversions {
 
   implicit class DockerSpecToProto(val dockerSpec: DockerSpec) extends AnyVal {
     def toProto: Protos.JobSpec.RunSpec.DockerSpec = {
-      Protos.JobSpec.RunSpec.DockerSpec.newBuilder().setImage(dockerSpec.image).build()
+      val builder = Protos.JobSpec.RunSpec.DockerSpec.newBuilder()
+
+      builder.setImage(dockerSpec.image)
+
+      builder.setForcePullImage(dockerSpec.forcePullImage)
+      dockerSpec.network.foreach(builder.setNetwork)
+      builder.setPrivileged(dockerSpec.privileged)
+      builder.addAllParameters(dockerSpec.parameters.map(_.toProto).asJava)
+      builder.build()
     }
   }
 
   implicit class ProtoToDockerSpec(val dockerSpec: Protos.JobSpec.RunSpec.DockerSpec) extends AnyVal {
-    def toModel: DockerSpec = DockerSpec(image = dockerSpec.getImage)
+    def toModel: DockerSpec = DockerSpec(
+      image = dockerSpec.getImage,
+      network = Some(dockerSpec.getNetwork),
+      portMappings = dockerSpec.getPortMappingsList.asScala.toModel,
+      privileged = dockerSpec.getPrivileged,
+      parameters = dockerSpec.getParametersList.map(Parameter(_))(collection.breakOut),
+      forcePullImage = dockerSpec.getForcePullImage
+    )
   }
 
   implicit class EnvironmentToProto(val environment: Map[String, String]) extends AnyVal {
@@ -298,6 +315,39 @@ object RunSpecConversions {
     def toModel: Map[String, String] = environmentVariables.map { environmentVariable =>
       environmentVariable.getKey -> environmentVariable.getValue
     }.toMap
+  }
+
+  implicit class ProtosToPortMappingSpec(val portMappings: mutable.Buffer[Protos.JobSpec.RunSpec.DockerSpec.PortMapping]) extends AnyVal {
+    def toModel: Option[Seq[mesosphere.marathon.state.Container.Docker.PortMapping]] = if (portMappings.nonEmpty) Some(portMappings.map { portMapping =>
+      PortMapping(
+        portMapping.getContainerPort,
+        if (portMapping.hasHostPort) Some(portMapping.getHostPort) else None,
+        portMapping.getServicePort,
+        portMapping.getProtocol,
+        if (portMapping.hasName) Some(portMapping.getName) else None,
+        portMapping.getLabelsList.map { p => p.getKey -> p.getValue }(collection.breakOut)
+      )
+    }.toList)
+    else None
+  }
+
+  implicit class PortMappingSpecToProto(val portMappings: Option[Seq[mesosphere.marathon.state.Container.Docker.PortMapping]]) extends AnyVal {
+    def toProto: Iterable[Protos.JobSpec.RunSpec.DockerSpec.PortMapping] =
+      if (portMappings.isEmpty) None
+      else
+        portMappings.map { listPortMapping =>
+          listPortMapping.map { portMapping =>
+            val builder = Protos.JobSpec.RunSpec.DockerSpec.PortMapping.newBuilder()
+              .setContainerPort(portMapping.containerPort)
+              .setProtocol(portMapping.protocol)
+              .setServicePort(portMapping.servicePort)
+
+            portMapping.hostPort.foreach(builder.setHostPort)
+            portMapping.name.foreach(builder.setName)
+
+            builder.build()
+          }
+        }.get
   }
 
 }

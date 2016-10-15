@@ -84,9 +84,103 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "credential": {
+              "type": "object",
+              "description": "Credential to authenticate with the docker registry.",
+              "additionalProperties": false,
+              "properties": {
+                "principal": {
+                  "type": "string",
+                  "description": "Principal to authenticate with the docker registry."
+                },
+                "secret": {
+                  "type": "string",
+                  "description": "Secret to authenticate with the docker registry."
+                }
+              },
+              "required": [ "principal" ]
+            },
+            "forcePullImage": {
+              "type": "boolean",
+              "description": "The container will be pulled, regardless if it is already available on the local system."
+            },
             "image": {
               "type": "string",
-              "documentation": "The docker repository image name."
+              "minLength": 1,
+              "description": "The name of the docker image to use."
+            },
+            "network": {
+              "type": "string",
+              "description": "The networking mode, this container should operate in. One of BRIDGE|HOST|NONE|USER",
+              "enum": ["BRIDGE", "HOST", "NONE", "USER"]
+            },
+            "parameters": {
+              "type": "array",
+              "description": "Allowing arbitrary parameters to be passed to docker CLI. Note that anything passed to this field is not guaranteed to be supported moving forward, as we might move away from the docker CLI.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Key of this parameter"
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Value of this parameter"
+                  }
+                },
+                "required": [ "key", "value" ]
+              }
+            },
+            "portMappings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "containerPort": {
+                    "type": "integer",
+                    "description": "Refers to the port the application listens to inside of the container. It is optional and defaults to 0. For each containerPort with a value of 0 Marathon assigns the containerPort the same value as the assigned hostPort. This is especially useful for apps that advertise the port they are listening on to the outside world for P2P communication. Without containerPort: 0 they would erroneously advertise their private container port which is usually not the same as the externally visible host port.",
+                    "maximum": 65535,
+                    "minimum": 0
+                  },
+                  "hostPort": {
+                    "type": "integer",
+                    "description": "Retains the traditional meaning in Marathon, which is a random port from the range included in the Mesos resource offer. The resulting host ports for each task are exposed via the task details in the REST API and the Marathon web UI. hostPort is optional. In BRIDGE mode it defaults to 0 if left unspecified. In USER mode an unspecified hostPort does not allocate a port from a Mesos offer.",
+                    "maximum": 65535,
+                    "minimum": 0
+                  },
+                  "labels": {
+                    "type": "object",
+                    "description": "This can be used to add metadata to be interpreted by external applications such as firewalls.",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the service hosted on this port. If provided, it must be unique over all port mappings.",
+                    "pattern": "^[a-z][a-z0-9-]*$"
+                  },
+                  "protocol": {
+                    "type": "string",
+                    "enum": ["tcp", "udp", "udp,tcp"],
+                    "description": "Protocol of the port (one of ['tcp', 'udp'] or 'udp,tcp' for both). Defaults to 'tcp'."
+                  },
+                  "servicePort": {
+                    "type": "integer",
+                    "description": "Is a helper port intended for doing service discovery using a well-known port per service. The assigned servicePort value is not used/interpreted by Marathon itself but supposed to used by load balancer infrastructure. See Service Discovery Load Balancing doc page. The servicePort parameter is optional and defaults to 0. Like hostPort, If the value is 0, a random port will be assigned. If a servicePort value is assigned by Marathon then Marathon guarantees that its value is unique across the cluster. The values for random service ports are in the range [local_port_min, local_port_max] where local_port_min and local_port_max are command line options with default values of 10000 and 20000, respectively.",
+                    "maximum": 65535,
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "privileged": {
+              "type": "boolean",
+              "description": "Run this docker image in privileged mode."
             }
           },
           "required": ["image"]

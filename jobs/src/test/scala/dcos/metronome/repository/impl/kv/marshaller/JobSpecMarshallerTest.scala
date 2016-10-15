@@ -1,8 +1,9 @@
 package dcos.metronome.repository.impl.kv.marshaller
 
 import dcos.metronome.model._
+import org.apache.mesos.Protos.ContainerInfo.DockerInfo.Network
 import org.joda.time.DateTimeZone
-import org.scalatest.{ FunSuite, Matchers }
+import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.immutable._
 
@@ -40,7 +41,7 @@ class JobSpecMarshallerTest extends FunSuite with Matchers {
       placement = PlacementSpec(constraints = Seq(ConstraintSpec("hostname", Operator.Eq, Some("localhost")))),
       artifacts = Seq(Artifact("http://www.foo.bar/file.tar.gz", extract = false, executable = true, cache = true)),
       maxLaunchDelay = 24.hours,
-      docker = Some(DockerSpec(image = "dcos/metronome")),
+      docker = Some(DockerSpec(image = "dcos/metronome",network = None, portMappings = None)),
       volumes = Seq(
         Volume(containerPath = "/var/log", hostPath = "/sandbox/task1/var/log", mode = Mode.RW)
       ),
