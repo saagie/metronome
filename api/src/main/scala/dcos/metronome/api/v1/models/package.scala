@@ -3,6 +3,7 @@ package dcos.metronome.api.v1
 import dcos.metronome.api._
 import dcos.metronome.jobinfo.JobInfo
 import dcos.metronome.jobrun.StartedJobRun
+import dcos.metronome.model.Event._
 import dcos.metronome.model._
 import dcos.metronome.scheduler.TaskState
 import mesosphere.marathon.core.task.Task
@@ -234,5 +235,27 @@ package object models {
         case (jsPath, errs) => Json.obj("path" -> jsPath.toString(), "errors" -> errs.map(_.message))
       }
     )
+  }
+
+  implicit lazy val JobSpecCreatedWrites: Writes[JobSpecCreated] = Json.writes[JobSpecCreated]
+  implicit lazy val JobSpecUpdatedWrites: Writes[JobSpecUpdated] = Json.writes[JobSpecUpdated]
+  implicit lazy val JobSpecDeletedWrites: Writes[JobSpecDeleted] = Json.writes[JobSpecDeleted]
+
+  implicit lazy val JobRunStartedWrites: Writes[JobRunStarted] = Json.writes[JobRunStarted]
+  implicit lazy val JobRunUpdateWrites: Writes[JobRunUpdate] = Json.writes[JobRunUpdate]
+  implicit lazy val JobRunFinishedWrites: Writes[JobRunFinished] = Json.writes[JobRunFinished]
+  implicit lazy val JobRunFailedWrites: Writes[JobRunFailed] = Json.writes[JobRunFailed]
+
+  lazy val eventWrites: Writes[Event] = new Writes[Event] {
+    override def writes(e: Event): JsValue = e match {
+      case event: JobSpecCreated => Json.toJson(event)
+      case event: JobSpecUpdated => Json.toJson(event)
+      case event: JobSpecDeleted => Json.toJson(event)
+
+      case event: JobRunStarted  => Json.toJson(event)
+      case event: JobRunUpdate   => Json.toJson(event)
+      case event: JobRunFinished => Json.toJson(event)
+      case event: JobRunFailed   => Json.toJson(event)
+    }
   }
 }

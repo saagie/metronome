@@ -53,7 +53,8 @@ class JobComponents(context: Context) extends BuiltInComponentsFromContext(conte
     jobsModule.pluginManger,
     httpErrorHandler,
     jobsModule.behaviorModule.metrics,
-    assets
+    assets,
+    actorSystem
   )
 
   def schedulerService = jobsModule.schedulerModule.schedulerService

@@ -1,5 +1,6 @@
 package dcos.metronome.api
 
+import akka.actor.ActorSystem
 import com.softwaremill.macwire._
 import controllers.Assets
 import dcos.metronome.api.v0.controllers.ScheduledJobSpecController
@@ -24,7 +25,8 @@ class ApiModule(
     pluginManager:    PluginManager,
     httpErrorHandler: HttpErrorHandler,
     metrics:          Metrics,
-    assets:           Assets
+    assets:           Assets,
+    actorSystem:      ActorSystem
 ) {
 
   lazy val applicationController = wire[ApplicationController]
@@ -42,6 +44,8 @@ class ApiModule(
   lazy val authorizer: Authorizer = authModule.authorizer
 
   lazy val authenticator: Authenticator = authModule.authenticator
+
+  lazy val eventStreamController = wire[EventStreamController]
 
   lazy val router: Router = {
     // add the prefix string in local scope for the Routes constructor

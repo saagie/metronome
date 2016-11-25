@@ -26,6 +26,7 @@ GET /v1/jobs/:jobId/runs dcos.metronome.api.v1.controllers.JobRunController.getJ
 GET /v1/jobs/:jobId/runs/:runId dcos.metronome.api.v1.controllers.JobRunController.getJobRun(jobId: JobId, runId)
 POST /v1/jobs/:jobId/runs/:runId/actions/stop dcos.metronome.api.v1.controllers.JobRunController.killJobRun(jobId: JobId, runId)
 
+GET /v1/events dcos.metronome.api.v1.controllers.EventStreamController.connect
 
 # TODO: deprecated API (remove in subsequent version)
 POST /v0/scheduled-jobs dcos.metronome.api.v0.controllers.ScheduledJobSpecController.createJob
